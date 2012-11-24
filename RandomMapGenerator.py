@@ -8,6 +8,14 @@ of the zone/world class instead.
 
 import itertools
 import random
+import StringIO
+import PIL
+
+SAVE_FSYSTEM, SAVE_MIDDLEDIRTY = range(2)
+SAVETYPE = SAVE_MIDDLEDIRTY
+
+WIDGET = None
+
 random.seed()
 snapname = 0
 
@@ -47,26 +55,26 @@ class Tile():
 		if self.x > 0:
 			self.neighboors.append(self.parent.tiles[self.x-1][self.y])
 
-		print "Remaining neighboors: " + str(self.neighboors)
+		#print "Remaining neighboors: " + str(self.neighboors)
 
 	def find_close(self, distance, allowedtiles = None, start_cost = None, cost_decline = 1):
 		visited = []
 		totalcost = 0
 		start_cost = start_cost or distance
 		allowedtiles = allowedtiles or [self]
-		print "Startcost: %s"%(start_cost,)
+		#print "Startcost: %s"%(start_cost,)
 
 		allowedtiles = type(self)
 
 		current_cost = start_cost
 		unvisited = [tuple([t for t in self.neighboors if isinstance(t,allowedtiles)])]
 		#totalcost += len(unvisited)*current_cost
-		print len(unvisited)
+		#print len(unvisited)
 
 		while len(unvisited) and distance > 0:
 			handling = unvisited.pop()
 			totalcost += len(handling) * current_cost
-			print "len(handling): %s current_cost: %s"%(len(handling), current_cost)
+			#print "len(handling): %s current_cost: %s"%(len(handling), current_cost)
 			current_cost -= cost_decline
 			distance -= 1
 			for tile in handling:
@@ -80,7 +88,10 @@ class Tile():
 	def transform_into(self, new):
 		global snapname
 		self.parent.tiles[self.x][self.y] = new(self.parent, self.pos)
-		SavePNG(self.parent, "C:\Users\Sebsebeleb\Desktop\mapgen\steps\\" + str(snapname)+".png")
+		if SAVETYPE == SAVE_FSYSTEM:
+			SavePNG(self.parent, "C:\Users\Sebsebeleb\Desktop\mapgen\steps\\" + str(snapname)+".png")
+		elif SAVETYPE == SAVE_MIDDLEDIRTY:
+			save_dirty(self.parent)
 		snapname += 1
 
 
@@ -126,9 +137,9 @@ class Zone():
 			for t in a:
 				r = random.random()
 				c = self._diamond_dense(t) * density #random treshold
-				print "%s lower than %s?"%(r,c)
+				#print "%s lower than %s?"%(r,c)
 				if r < c:
-					print "Transforming"
+					#print "Transforming"
 					t.transform_into(WaterTile)
 
 	def _round_dense(self, tile):
@@ -140,17 +151,17 @@ class Zone():
 
 	def remove_lone(self, old, new):
 		for a in self.tiles:
-			print a
+			#print a
 			for t in a:
-				#print "Moving on to " + str(t)
+				##print "Moving on to " + str(t)
 				transform = 1
 				for n in [i for i in t.neighboors if isinstance(i, old)]:
-					print n
+					#print n
 					if isinstance(n, old):
-						#print "It is!"
+						##print "It is!"
 						transform = 0
 				if transform == 1:
-					#print "Transforming %s"%(t)
+					##print "Transforming %s"%(t)
 					t.transform_into(new)
 
 def find_road_path(start, stop):
@@ -175,12 +186,12 @@ def eliminate_lowpops(zone, oldtile, insta_treshhold, r, factor = 1.0, newtile =
 
 	for i in zone.tiles:
 		for t in i:
-			print "t: %s"%(t)
+			#print "t: %s"%(t)
 			if not isinstance(t, oldtile):
 				continue
-			print "%s < %s?"%(t.populated,insta_treshhold)
+			#print "%s < %s?"%(t.populated,insta_treshhold)
 			if t.populated < insta_treshhold:
-				print "it is!"
+				#print "it is!"
 				t.transform_into(newtile)
 				#tiles.remove(t)
 
@@ -208,10 +219,41 @@ def SavePNG(World, f = "C:\Users\Sebsebeleb\Desktop\mapgen\final.png"):
 		for y in World.tiles[n]:
 			for c in y.colour:
 				p[n].append(c)
-
 	saver = png.from_array(p, "RGB")
-	saver.save(f)
+	#saver.save(f)
 
+def save_dirty(world):
+	WIDGET.set_map(get_png(world))
+
+def get_png(world):
+	scale = 16
+	from PIL import Image, ImageDraw
+
+	flat_data = []
+	for n,x in enumerate(world.tiles):
+		for y in world.tiles[n]:
+			for c in y.colour:
+				flat_data.append(c)
+
+	print flat_data
+
+	image = Image.new("RGB",(30*scale,30*scale)) #TODO: replace (10,10) with the actual size
+	draw = ImageDraw.Draw(image)
+	for i in range(30*30):
+		r,g,b = flat_data[i*3],flat_data[i*3+1],flat_data[i*3+2]
+		draw.rectangle(((i%30*scale,i/30*scale),(i%30*scale+scale,i/30*scale+scale)), fill=(r,g,b), outline=(0,0,0))
+	del draw
+
+	data = StringIO.StringIO()
+
+	image.save(data,"PNG")
+	image.save(r"C:\Users\Sebsebeleb\Desktop\test.png","PNG")
+
+	return data
+
+def set_widget(widget):
+	global WIDGET
+	WIDGET = widget
 
 
 def main():
