@@ -89,7 +89,8 @@ class Tile():
 		global snapname
 		self.parent.tiles[self.x][self.y] = new(self.parent, self.pos)
 		if SAVETYPE == SAVE_FSYSTEM:
-			SavePNG(self.parent, "C:\Users\Sebsebeleb\Desktop\mapgen\steps\\" + str(snapname)+".png")
+			#SavePNG(self.parent, "C:\Users\Sebsebeleb\Desktop\mapgen\steps\\" + str(snapname)+".png")
+			pass
 		elif SAVETYPE == SAVE_MIDDLEDIRTY:
 			save_dirty(self.parent)
 		snapname += 1
@@ -164,6 +165,20 @@ class Zone():
 					##print "Transforming %s"%(t)
 					t.transform_into(new)
 
+	def smoothen(self, tile, new_tile):
+		"""
+		Has a chance to trasnform tiles with few neighboors of the same time, depending on how many
+		"""
+		chances = [0.0,0.15,0.45,0.8,0.90]
+
+		for t in itertools.chain(*self.tiles):
+			if not isinstance(t,tile):
+				continue
+			print "hello"
+			num_equal = len([i for i in t.neighboors if i.ttype == t.ttype])
+			if random.random() > chances[num_equal+4-len(t.neighboors)]: 
+				t.transform_into(new_tile)
+
 def find_road_path(start, stop):
 	x,y = start.pos
 	goal = stop.pos
@@ -210,7 +225,7 @@ def found_cities(self, zone, numberof):
 	reversed(sorted(tiles, key = lambda t: t.populated))
 
 
-def SavePNG(World, f = "C:\Users\Sebsebeleb\Desktop\mapgen\final.png"):
+def SavePNG(World, f = None):#"C:\Users\Sebsebeleb\Desktop\mapgen\final.png"):
 	import png
 
 	p = []
@@ -235,7 +250,6 @@ def get_png(world):
 			for c in y.colour:
 				flat_data.append(c)
 
-	print flat_data
 
 	image = Image.new("RGB",(30*scale,30*scale)) #TODO: replace (10,10) with the actual size
 	draw = ImageDraw.Draw(image)
@@ -247,9 +261,14 @@ def get_png(world):
 	data = StringIO.StringIO()
 
 	image.save(data,"PNG")
-	image.save(r"C:\Users\Sebsebeleb\Desktop\test.png","PNG")
 
 	return data
+
+def init_world(size):
+	KEEP_INSIDE = (500,500)
+	MAX_SCALE = 16
+
+	
 
 def set_widget(widget):
 	global WIDGET
@@ -258,7 +277,7 @@ def set_widget(widget):
 
 def main():
 	snapshots = 1	#0 is disabled, only the final state will be saved, 1 is some, 2 is one picture for every modification
-	savelocation = "C:\Users\Sebsebeleb\Desktop\mapgen\\"
+	savelocation = "" #"C:\Users\Sebsebeleb\Desktop\mapgen\\"
 
 	z = Zone((0,0),(10,10))
 	SavePNG(z, savelocation+"1.png")

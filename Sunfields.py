@@ -1,6 +1,8 @@
 import sys
 from PyQt4 import QtGui, QtCore
 
+import RandomMapGenerator as RMG
+
 main_window = None  
 
 class Sunfields(QtGui.QWidget):
@@ -16,11 +18,27 @@ class Sunfields(QtGui.QWidget):
         
         self.setToolTip('This is a <b>QWidget</b> widget')
         
-        btn = QtGui.QPushButton('Button', self)
+        btn = QtGui.QPushButton('New map', self)
         btn.setToolTip('This is a <b>QPushButton</b> widget')
         btn.resize(btn.sizeHint())
-        btn.move(450, 550)
+        btn.move(100, 550)
         btn.clicked.connect(self.generate)
+
+        btn = QtGui.QPushButton('Densify', self)
+        btn.resize(btn.sizeHint())
+        btn.move(200, 550)
+        btn.clicked.connect(self.do_densify)
+
+        btn = QtGui.QPushButton('Remove Lone', self)
+        btn.resize(btn.sizeHint())
+        btn.move(275, 550)
+        btn.clicked.connect(self.do_remove_lone)
+
+        btn = QtGui.QPushButton('Smooth', self)
+        btn.resize(btn.sizeHint())
+        btn.move(350, 550)
+        btn.clicked.connect(self.do_smoothen)
+
 
         self.map_label = QtGui.QLabel(self)
         self.map_label.setGeometry(QtCore.QRect(75, 50, 500, 500))
@@ -37,19 +55,32 @@ class Sunfields(QtGui.QWidget):
         self.repaint() #TODO: Apparently, this is not usually needed (http://www.riverbankcomputing.com/pipermail/pyqt/2009-January/021550.html) | use signalling instead
 
     def generate(self):
-        import RandomMapGenerator as RMG
-        import time
         RMG.set_widget(self)
-        z = RMG.Zone((0,0),(30,30))
-        time.sleep(1)
+        self.zone = RMG.Zone((0,0),(30,30))
+        #z.find_neighboors()
+        #z.densify(1.5)
+        #z.find_neighboors()
+        #z.remove_lone(RMG.LandTile, RMG.WaterTile)
+        #z.find_neighboors()
+        #z.remove_lone(RMG.WaterTile, RMG.LandTile)
+        #z.find_neighboors()
+        #z.smoothen(RMG.LandTile, RMG.WaterTile)
 
-        z.densify(1.0)
-        time.sleep(1)
-        z.find_neighboors()
-        time.sleep(1)
-        z.remove_lone(RMG.LandTile, RMG.WaterTile)
-        time.sleep(1)
-        z.remove_lone(RMG.WaterTile, RMG.LandTile)
+    def do_densify(self):
+        self.zone.find_neighboors()
+        self.zone.densify(1.0)
+
+    def do_remove_lone(self):
+        self.zone.find_neighboors()
+        self.zone.remove_lone(RMG.LandTile, RMG.WaterTile)
+        self.zone.find_neighboors()
+        self.zone.remove_lone(RMG.WaterTile,RMG.LandTile)
+
+    def do_smoothen(self):
+        self.zone.find_neighboors()
+        self.zone.smoothen(RMG.LandTile, RMG.WaterTile)
+        self.zone.find_neighboors()
+        self.zone.smoothen(RMG.WaterTile, RMG.LandTile)
 
 def set_map(picture):
     print main_window
